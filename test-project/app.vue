@@ -2,7 +2,7 @@
   <div id="app">
     <nav>
       <router-link to="/students">Список студентів</router-link>
-      <router-link to="/products">Products</router-link>
+      <router-link to="/products">Список продуктів</router-link>
     </nav>
     <router-view />
   </div>
@@ -19,7 +19,6 @@ export default {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
 }
 
 nav {

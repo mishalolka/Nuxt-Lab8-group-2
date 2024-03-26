@@ -25,6 +25,16 @@ export default {
         this.currentPage--;
       }
     },
+    firstPageForStudent() {
+      if (this.currentPage > 1) {
+        this.currentPage = 1;
+      }
+    },
+    lastPageForStudent() {
+      if (this.currentPage < this.totalPagesForStudent) {
+        this.currentPage = this.totalPagesForStudent
+      }
+    },
     nextPageForStudent() {
       if (this.currentPage < this.totalPagesForStudent) {
         this.currentPage++;
@@ -128,12 +138,18 @@ export default {
       </table>
     </div>
 
-    <button @click="previousPageForStudent" :disabled="currentPage === 1" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+    <button @click="firstPageForStudent" :disabled="currentPage === 1" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+      <<
+    </button>
+    <button @click="previousPageForStudent" :disabled="currentPage === 1" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
       <
     </button>
-    <span class="text-gray-500"> {{ currentPage }} з {{ totalPagesForStudent }}</span>
-    <button @click="nextPageForStudent" :disabled="currentPage === totalPagesForStudent" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2">
+    <span class="text-gray-500 my-5"> {{ currentPage }} з {{ totalPagesForStudent }}</span>
+    <button @click="nextPageForStudent" :disabled="currentPage === totalPagesForStudent" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2">
       >
+    </button>
+    <button @click="lastPageForStudent" :disabled="currentPage === totalPagesForStudent" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2">
+      >>
     </button>
   </div>
 </template>
