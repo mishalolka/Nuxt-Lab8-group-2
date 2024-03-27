@@ -8,7 +8,7 @@ export default defineComponent({
 
 <template>
 <div>
-  Home page
+  Home page press buttons up!
 </div>
 </template>
 
