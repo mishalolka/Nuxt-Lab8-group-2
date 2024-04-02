@@ -1,198 +1,91 @@
-<script lang="js">
-export default {
-  data() {
-    return {
-      productList: [],
-      searchQuery: '',
-      currentPage: 1,
-      itemsInPage: 5,
-      filter: [],
-      sortKey: '',
-      sortOrders: {
-        'id': 1,
-        'title': 1,
-        'price': 1,
-        'category': 1,
-        'rating': 1,
-        'brand': 1,
-        'description': 1
-      }
-    };
-  },
-  computed: {
-    totalPagesForProducts() {
-      return Math.ceil(this.filter.length / this.itemsInPage);
-    },
-    paginatedAllProducts() {
-      const startIndex = (this.currentPage - 1) * this.itemsInPage;
-      const endIndex = startIndex + this.itemsInPage;
-      const sortedArray = this.filter.slice(startIndex, endIndex).sort((a, b) => {
-        if (this.sortKey === 'title') {
-          return this.sortOrders.title * a.title.localeCompare(b.title);
-        } else if (this.sortKey === 'price') {
-          return this.sortOrders.price * (a.price - b.price);
-        } else if (this.sortKey === 'category') {
-          return this.sortOrders.category * a.category.localeCompare(b.category);
-        } else if (this.sortKey === 'rating') {
-          return this.sortOrders.rating * (a.rating - b.rating);
-        } else if (this.sortKey === 'brand') {
-          return this.sortOrders.brand * a.brand.localeCompare(b.brand);
-        }
-        else if (this.sortKey === 'description') {
-          return this.sortOrders.description * a.description.localeCompare(b.description);
-        }
-        else {
-          return this.sortOrders.id * (a.id - b.id);
-        }
-      });
-      return sortedArray;
-    }
-  },
-  methods: {
-    previousPageForProducts() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-      }
-    },
-    nextPageForProducts() {
-      if (this.currentPage < this.totalPagesForProducts) {
-        this.currentPage++;
-      }
-    },
-    firstPageForProducts() {
-      if (this.currentPage > 1) {
-        this.currentPage = 1;
-      }
-    },
-    lastPageForProducts() {
-      if (this.currentPage < this.totalPagesForProducts) {
-        this.currentPage = this.totalPagesForProducts
-      }
-    },
+<script setup lang="ts">
+useHead({
+  title: 'Список товарів'
+})
 
-    searchForProducts(sortKey) {
-      this.sortKey = sortKey;
-      this.filter = this.productList.filter(product =>
-          product.id.toString().toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.price.toString().toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.category.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.rating.toString().toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.brand.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-      this.currentPage = 1;
-    },
+const cols = [
+  { key: 'title', label: 'Title', sortable: true },
+  { key: 'category', label: 'Category', sortable: true},
+  { key: 'rating', label: 'Rating', sortable: true },
+  { key: 'price', label: 'Price', sortable: true },
+  { key: 'brand', label: 'Brand', sortable: true },
+  { key: 'thumbnail', label: 'Thumbnail'},
+  { key: 'description', label: 'description', sortable: true },
+];
 
-    toggleSortOrder(sortKey) {
-      this.sortOrders[sortKey] = -this.sortOrders[sortKey];
-      this.searchForProducts(sortKey);
-    }
-  },
+const { data } = await useFetch<any>('https://dummyjson.com/products');
+const ps = ref(data.value.products);
+const q = ref('');
+const p = ref(1);
+const pCount = 10;
+const total = ref(ps.value.length);
+const s = ref({ column: '', direction: 'asc' as const })
 
-  async mounted() {
-    try {
-      const response = await fetch('https://dummyjson.com/products');
-      const data = await response.json();
-      this.productList = data.products;
-      this.filter = this.productList;
-    } catch (err) {
-      console.error('Error fetching to API:', err);
-    }
+const sortedRs = computed(() => {
+  const { column, direction } = s.value
+  const sortedPs = [...ps.value]
+
+  if ( direction && column) {
+    sortedPs.sort((a, b) => {
+      const bValue= b[column]
+      const aValue = a[column]
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1
+      return 0
+    })
   }
-};
+
+  return sortedPs
+})
+
+const rows = computed(() => {
+  let filteredPs = [...sortedRs.value]
+
+  if (q.value) {
+    filteredPs = filteredPs.filter(product => {
+      return Object.values(product).some(value => {
+        return String(value).toLowerCase().includes(q.value.toLowerCase())
+      })
+    })
+  }
+  total.value = filteredPs.length;
+  const start = (p.value - 1) * pCount
+  const end = start + pCount
+  return filteredPs.slice(start, end)
+})
+
+watch(q,()=>{
+  p.value = 1;
+})
+
 </script>
+
 <template>
   <div>
-    <h1 class="text-2xl m-5 text-black-500">Список продуктів</h1>
-    <input type="text" v-model="searchQuery" @input="searchForProducts" placeholder="Пошук продукту" class="bg-gray-200 py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline w-50" style="margin-bottom: 10px; color:black;">
-    <table class="w-full border-collapse">
-      <thead>
-      <tr>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('id')">
-          id
-          <i class="fa fa-sort{{ sortOrders.id > 0? '-up' : '-down' }}"></i>
-        </th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('title')">
-          Назва
-          <i class="fa fa-sort{{ sortOrders.title > 0? '-up' : '-down' }}"></i>
-        </th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('price')">
-          Ціна
-          <i class="fa fa-sort{{ sortOrders.price > 0? '-up' : '-down' }}"></i>
-        </th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('category')">
-          Категорія
-          <i class="fa fa-sort{{ sortOrders.category > 0? '-up' : '-down' }}"></i>
-        </th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('rating')">
-          Оцінка
-          <i class="fa fa-sort{{ sortOrders.rating > 0? '-up' : '-down' }}"></i>
-        </th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('brand')">
-          Бренд
-          <i class="fa fa-sort{{ sortOrders.brand > 0? '-up' : '-down' }}"></i>
-        </th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" >
-          Фото
-        </th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('description')">
-          Опис
-          <i class="fa fa-sort{{ sortOrders.description > 0? '-up' : '-down' }}"></i>
-        </th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-for="product in paginatedAllProducts" :key="product.id" class="border border-gray-300 hover:bg-gray-100">
-        <td class="border border-gray-300 py-2 px-4">{{ product.id }}</td>
-        <td class="border border-gray-300 py-2 px-4">{{ product.title }}</td>
-        <td class="border border-gray-300 py-2 px-4">{{ product.price }}</td>
-        <td class="border border-gray-300 py-2 px-4">{{ product.category }}</td>
-        <td class="border border-gray-300 py-2 px-4" :style="{ color: product.rating < 4.5 ? 'red' : 'green' }">{{ product.rating }}</td>
-        <td class="border border-gray-300 py-2 px-4">{{ product.brand }}</td>
-        <td class="border border-gray-300 py-2 px-4">
-          <img :src="product.thumbnail" alt="Product Thumbnail">
-        </td>
-        <td class="border border-gray-300 py-2 px-4">{{ product.description }}</td>
+    <div class="flex p-3 border-b border-gray-200 justify-center">
+      <UInput placeholder="Пошук..." color="black" v-model="q"/>
+    </div>
+    <UTable class="w-full"
+            :ui="{ th: {base: 'text-center'}, td: { base: 'max-w-[0] truncate' } }"
+            :columns="cols"
+            :rows="rows"
+            v-model:sort="s"
+            sort-mode="manual"
+            sort-asc-icon="i-heroicons-arrow-up-20-solid"
+            sort-desc-icon="i-heroicons-arrow-down-20-solid"
+            :sort-button="{ icon: 'i-heroicons-sparkles-20-solid', color: 'primary', variant: 'outline', size: '2xs', square: false, ui: { rounded: 'rounded-full' } }"
 
-      </tr>
-      </tbody>
-    </table>
-    <button @click="firstPageForProducts" :disabled="currentPage === 1" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
-      <<
-    </button>
-    <button @click="previousPageForProducts" :disabled="currentPage === 1" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
-      <
-    </button>
-    <span class="text-gray-500 my-5"> {{ currentPage }} з {{ totalPagesForProducts }}</span>
-    <button @click="nextPageForProducts" :disabled="currentPage === totalPagesForProducts" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2">
-      >
-    </button>
-    <button @click="lastPageForProducts" :disabled="currentPage === totalPagesForStudent" class="bg-blue-500 my-5 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2">
-      >>
-    </button>
+    >
+      <template #thumbnail-data="{ row }">
+        <img class="w-[100px] h-[100px]" :src="row.thumbnail" alt="..." />
+      </template>
+      <template #rating-data="{ row }">
+        <span :class="row.rating < 4.5? 'text-red-700' : 'text-green-700' ">{{ row.rating }}</span>
+      </template>
+
+    </UTable>
+    <div class="flex justify-center mt-5">
+      <UPagination v-model="p" :page-count="pCount" :total="total" class="text-black"/>
+    </div>
   </div>
 </template>
-
-<style scoped>
-img {
-  width: 100px !important;
-  height: 100px !important;
-}
-th {
-  cursor: pointer;
-}
-
-i.fa-sort-up:before {
-  content: "▲";
-}
-
-i.fa-sort-down:before {
-  content: "▼";
-}
-
-i.fa-sort:before {
-  content: "⇵";
-}
-
-</style>
