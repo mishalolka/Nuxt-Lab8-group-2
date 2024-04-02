@@ -1,5 +1,4 @@
 <script lang="js">
-import axios from 'axios';
 export default {
   data() {
     return {
@@ -7,7 +6,17 @@ export default {
       searchQuery: '',
       currentPage: 1,
       itemsInPage: 5,
-      filter: []
+      filter: [],
+      sortKey: '',
+      sortOrders: {
+        'id': 1,
+        'title': 1,
+        'price': 1,
+        'category': 1,
+        'rating': 1,
+        'brand': 1,
+        'description': 1
+      }
     };
   },
   computed: {
@@ -17,7 +26,26 @@ export default {
     paginatedAllProducts() {
       const startIndex = (this.currentPage - 1) * this.itemsInPage;
       const endIndex = startIndex + this.itemsInPage;
-      return this.filter.slice(startIndex, endIndex);
+      const sortedArray = this.filter.slice(startIndex, endIndex).sort((a, b) => {
+        if (this.sortKey === 'title') {
+          return this.sortOrders.title * a.title.localeCompare(b.title);
+        } else if (this.sortKey === 'price') {
+          return this.sortOrders.price * (a.price - b.price);
+        } else if (this.sortKey === 'category') {
+          return this.sortOrders.category * a.category.localeCompare(b.category);
+        } else if (this.sortKey === 'rating') {
+          return this.sortOrders.rating * (a.rating - b.rating);
+        } else if (this.sortKey === 'brand') {
+          return this.sortOrders.brand * a.brand.localeCompare(b.brand);
+        }
+        else if (this.sortKey === 'description') {
+          return this.sortOrders.description * a.description.localeCompare(b.description);
+        }
+        else {
+          return this.sortOrders.id * (a.id - b.id);
+        }
+      });
+      return sortedArray;
     }
   },
   methods: {
@@ -42,7 +70,8 @@ export default {
       }
     },
 
-    searchForProducts() {
+    searchForProducts(sortKey) {
+      this.sortKey = sortKey;
       this.filter = this.productList.filter(product =>
           product.id.toString().toLowerCase().includes(this.searchQuery.toLowerCase()) ||
           product.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -53,13 +82,19 @@ export default {
           product.description.toLowerCase().includes(this.searchQuery.toLowerCase())
       );
       this.currentPage = 1;
+    },
+
+    toggleSortOrder(sortKey) {
+      this.sortOrders[sortKey] = -this.sortOrders[sortKey];
+      this.searchForProducts(sortKey);
     }
   },
 
   async mounted() {
     try {
-      const response = await axios.get('https://dummyjson.com/products');
-      this.productList = response.data.products;
+      const response = await fetch('https://dummyjson.com/products');
+      const data = await response.json();
+      this.productList = data.products;
       this.filter = this.productList;
     } catch (err) {
       console.error('Error fetching to API:', err);
@@ -74,14 +109,37 @@ export default {
     <table class="w-full border-collapse">
       <thead>
       <tr>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">id</th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">Назва</th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">Ціна</th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">Категорія</th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">Оцінка</th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">Бренд</th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">Фото</th>
-        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left">Опис</th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('id')">
+          id
+          <i class="fa fa-sort{{ sortOrders.id > 0? '-up' : '-down' }}"></i>
+        </th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('title')">
+          Назва
+          <i class="fa fa-sort{{ sortOrders.title > 0? '-up' : '-down' }}"></i>
+        </th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('price')">
+          Ціна
+          <i class="fa fa-sort{{ sortOrders.price > 0? '-up' : '-down' }}"></i>
+        </th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('category')">
+          Категорія
+          <i class="fa fa-sort{{ sortOrders.category > 0? '-up' : '-down' }}"></i>
+        </th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('rating')">
+          Оцінка
+          <i class="fa fa-sort{{ sortOrders.rating > 0? '-up' : '-down' }}"></i>
+        </th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('brand')">
+          Бренд
+          <i class="fa fa-sort{{ sortOrders.brand > 0? '-up' : '-down' }}"></i>
+        </th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" >
+          Фото
+        </th>
+        <th class="bg-gray-100 border border-gray-300 py-2 px-4 text-left" @click="toggleSortOrder('description')">
+          Опис
+          <i class="fa fa-sort{{ sortOrders.description > 0? '-up' : '-down' }}"></i>
+        </th>
       </tr>
       </thead>
       <tbody>
@@ -121,4 +179,20 @@ img {
   width: 100px !important;
   height: 100px !important;
 }
+th {
+  cursor: pointer;
+}
+
+i.fa-sort-up:before {
+  content: "▲";
+}
+
+i.fa-sort-down:before {
+  content: "▼";
+}
+
+i.fa-sort:before {
+  content: "⇵";
+}
+
 </style>

@@ -1,10 +1,10 @@
 <template>
   <div id="app">
     <nav>
-      <router-link to="/students">Список студентів</router-link>
-      <router-link to="/products">Список продуктів</router-link>
+      <a href="/students">Список студентів</a>
+      <a href="/products">Список продуктів</a>
     </nav>
-    <router-view />
+    <NuxtPage />
   </div>
 </template>
 
